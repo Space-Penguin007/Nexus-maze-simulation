@@ -1,0 +1,64 @@
+#VRML_SIM R2023b utf8
+# Custom robot con mesh E‑puck + sensori/ruote dal JSON
+
+PROTO Custom_Erebus_Robot [
+]
+{
+  Robot {
+    translation 0 0 0.02
+    rotation 0 1 0 0
+    controller "robot0Controller"
+    children [
+
+      # Usa il mesh 3D del robot E-puck integrato
+      DEF BODY E-puck {
+        translation 0 0 0
+        rotation 0 0 1 0
+        version "2"
+      }
+
+      # Sensori Distance (posizioni da JSON)
+      DistanceSensor {
+        name "distance sensor1"
+        translation -0.213 0.335 -0.309
+        rotation -0.58 0.58 0.58 2.09
+        type "infra-red"
+      }
+      DistanceSensor {
+        name "distance sensor2"
+        translation -0.107 0.335 -0.355
+        rotation -0.58 0.58 0.58 2.09
+        type "infra-red"
+      }
+      DistanceSensor {
+        name "distance sensor3"
+        translation 0.108 0.335 -0.355
+        rotation -0.58 0.58 0.58 2.09
+        type "infra-red"
+      }
+      DistanceSensor {
+        name "distance sensor4"
+        translation 0.220 0.335 -0.309
+        rotation -0.58 0.58 0.58 2.09
+        type "infra-red"
+      }
+
+      # Motori delle ruote (da JSON)
+      RotationalMotor {
+        name "wheel1"
+        translation 0.26 0.015 0
+        rotation 0 -1 0 1.57
+        deviceType "rotational motor"
+        maxTorque 10
+      }
+      RotationalMotor {
+        name "wheel2"
+        translation -0.26 0.015 0
+        rotation 0 -1 0 1.57
+        deviceType "rotational motor"
+        maxTorque 10
+      }
+
+    ]
+  }
+}

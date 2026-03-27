@@ -1,0 +1,13 @@
+If the robot:
+
+Hits walls → Reduce MOVE_TIME to 1.0 or 0.8
+
+Stops too early → Increase MOVE_TIME to 1.4
+
+Turns too much → Reduce TURN_TIME to 0.6
+
+Doesn't turn enough → Increase TURN_TIME to 1.0
+
+Sees walls too far → Reduce WALL_DISTANCE to 0.2
+
+Ignores walls → Increase WALL_DISTANCE to 0.4

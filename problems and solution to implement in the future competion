@@ -1,0 +1,149 @@
+
+# 🧭 RoboCupJunior Rescue Maze – Technical README
+
+## 📑 Table of Contents
+- [Overview]
+- [Hardware & Sensori]
+- [Architettura Software]
+- [SLAM](#slam)
+- [LIDAR](#lidar)
+- [Computer Vision (YOLO 64×64)]
+- [Follow-Wall Sinistra Intelligente]
+- [Emitter Cycle]
+- [Tecniche dai Team Indiani]
+- [Note di Sviluppo]
+
+
+
+## 🧩 Overview
+Questo repository contiene il codice e la documentazione del robot per la competizione **RoboCupJunior Rescue Maze**.  
+L’obiettivo è creare un robot robusto, stabile e affidabile, capace di mappare il labirinto, rilevare vittime e navigare in modo autonomo utilizzando LIDAR, SLAM e YOLO.
+
+---
+
+## 🔧 Hardware & Sensori
+- **LIDAR** → unico sensore di distanza  
+- **Fotocamera 64×64** → per YOLO lightweight  
+- **Odometria** → per SLAM  
+- **Emitter/Receiver** → comunicazione beacon  
+- **Motori differenziali** → movimento e allineamento
+
+---
+
+## 🏗️ Architettura Software
+- **controller.py** → logica principale  
+- **mapping.py** → gestione mappa e celle  
+- **pathfinding.py** → A*, BFS, backtracking  
+- **exploration.py** → frontier-based exploration  
+- **vision/** → YOLO + preprocessing  
+- **utils/** → filtri, PID, allineamento
+
+---
+
+## 🧭 SLAM
+SLAM basato su grafo con celle contenenti:
+- visitato  
+- muri  
+- checkpoint  
+- vittime  
+- penalità  
+
+Caratteristiche:
+- Fusione LIDAR + odometria  
+- Correzione drift tramite **wall alignment**  
+- Aggiornamento continuo della posa  
+- Mappa coerente anche con rumore e drift
+
+---
+
+## 📡 LIDAR
+Il LIDAR è l’unico sensore di distanza e gestisce:
+- rilevamento muri  
+- distanza laterale  
+- allineamento  
+- riconoscimento corridoi e incroci  
+
+Tecniche:
+- filtro mediana su più scansioni  
+- smoothing angolare  
+- soglie dinamiche per muri vicini/lontani  
+
+---
+
+## 🎥 Computer Vision (YOLO 64×64)
+La fotocamera ha risoluzione molto bassa → serve pipeline ottimizzata.
+
+Pipeline consigliata:
+1. crop zona utile  
+2. resize a **64×64**  
+3. normalizzazione  
+4. inferenza YOLO  
+5. conferma multi‑frame  
+
+Regole operative:
+- detection solo quando il robot è **fermo e allineato**  
+- evitare detection in curva o con yaw instabile  
+
+---
+
+## ↩️ Follow-Wall Sinistra Intelligente
+Non è un semplice “segui sinistra”, ma una logica avanzata:
+
+- muro davanti → gira  
+- muro dietro a sinistra → correggi  
+- muro a destra → mantieni distanza  
+- capire se la cella è già stata visitata  
+- prima della detection: **stop + allineamento perfetto**  
+
+Obiettivo: stabilità, niente drift, niente oscillazioni.
+
+---
+
+## 📶 Emitter Cycle
+Gestione corretta del ciclo emitter:
+- evitare spam di pacchetti  
+- sincronizzare con modulo di comunicazione  
+- usare timer per ridurre carico computazionale  
+- invio periodico e controllato dei beacon  
+
+---
+
+## 🎬 Tecniche dai Team Indiani
+Osservazioni utili dai video dei team indiani RCJ:
+- allineamento continuo con i muri  
+- SLAM semplice ma stabile  
+- LIDAR come unico sensore  
+- movimenti lenti e controllati  
+- micro‑correzioni costanti di yaw  
+- vision attivata solo da fermi  
+- conferma multipla delle vittime  
+
+---
+
+## 📝 Note di Sviluppo
+Questa sezione raccoglie problemi e soluzioni individuate:
+- YOLO ottimizzato per 64×64  
+- SLAM con correzione drift  
+- LIDAR come unico sensore  
+- follow-wall avanzato  
+- emitter cycle ottimizzato  
+- tecniche dei team indiani integrate  
+
+---
+
+## 📌 Contributi
+Pull request e issue sono benvenuti.  
+Ogni contributo deve mantenere:
+- stabilità  
+- leggibilità  
+- compatibilità con la struttura esistente  
+
+---
+
+Se vuoi, posso anche:
+- generarti **README + badge GitHub**  
+- aggiungere **immagini, diagrammi, flowchart**  
+- creare una **versione inglese**  
+- aggiungere una sezione “How to Run” con comandi e struttura cartelle  
+
+Dimmi cosa vuoi aggiungere.

@@ -129,21 +129,5 @@ Questa sezione raccoglie problemi e soluzioni individuate:
 - emitter cycle ottimizzato  
 - tecniche dei team indiani integrate  
 
----
-
-## 📌 Contributi
-Pull request e issue sono benvenuti.  
-Ogni contributo deve mantenere:
-- stabilità  
-- leggibilità  
-- compatibilità con la struttura esistente  
-
----
-
-Se vuoi, posso anche:
-- generarti **README + badge GitHub**  
-- aggiungere **immagini, diagrammi, flowchart**  
-- creare una **versione inglese**  
-- aggiungere una sezione “How to Run” con comandi e struttura cartelle  
-
-Dimmi cosa vuoi aggiungere.
+Sito per fare le mappe su webots:
+http://rescuesim.uai.edu.ar/home

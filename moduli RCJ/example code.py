@@ -1,0 +1,101 @@
+from controller import Robot # Import Webots Robot class; takes no input, produces robot instance handle; adjust if using external simulation APIs[cite: 1, 5, 7]
+import cv2 # Import OpenCV library; handles pixel matrices, outputs transformed images; adjust CV algorithms as needed[cite: 1, 3]
+import numpy as np # Import NumPy for numerical arrays; converts raw buffers to formatted matrices; adjust array shapes as needed[cite: 1, 3, 4]
+import struct # Import struct for binary data conversion; packs/unpacks C-style structs into byte strings; adjust format strings for packet types[cite: 2, 4, 5, 6]
+
+timeStep = 32 # Define simulation step in ms; takes integer, sets step rate; adjust lower for precision or higher for performance[cite: 1, 3, 4, 5, 6, 7]
+max_velocity = 6.28 # Define maximum motor speed constant; float value, sets rotational limit; adjust based on robot motor limits[cite: 7]
+
+robot = Robot() # Create main Webots robot controller object; returns Robot object handle; required for device access[cite: 1, 3, 5, 6, 7]
+
+wheel1 = robot.getDevice("wheel1 motor") # Fetch handle for left motor device; accepts motor name string, returns Motor object; adjust string to match PROTO name[cite: 5, 7]
+wheel2 = robot.getDevice("wheel2 motor") # Fetch handle for right motor device; accepts motor name string, returns Motor object; adjust string to match PROTO name[cite: 5, 7]
+wheel1.setPosition(float("inf")) # Set left motor to velocity mode; takes infinity float, enables endless rotation; adjust if position control is needed[cite: 5, 7]
+wheel2.setPosition(float("inf")) # Set right motor to velocity mode; takes infinity float, enables endless rotation; adjust if position control is needed[cite: 5, 7]
+wheel1.setVelocity(0.0) # Set initial left wheel velocity to 0; takes float speed value; adjust for custom starting speed[cite: 7]
+wheel2.setVelocity(0.0) # Set initial right wheel velocity to 0; takes float speed value; adjust for custom starting speed[cite: 7]
+
+s1 = robot.getDevice("ps5") # Fetch proximity sensor handle 1; accepts string name, returns DistanceSensor object; adjust string to match robot PROTO[cite: 7]
+s2 = robot.getDevice("ps7") # Fetch proximity sensor handle 2; accepts string name, returns DistanceSensor object; adjust string to match robot PROTO[cite: 7]
+s3 = robot.getDevice("ps0") # Fetch proximity sensor handle 3; accepts string name, returns DistanceSensor object; adjust string to match robot PROTO[cite: 7]
+s4 = robot.getDevice("ps2") # Fetch proximity sensor handle 4; accepts string name, returns DistanceSensor object; adjust string to match robot PROTO[cite: 7]
+s1.enable(timeStep) # Enable sensor s1; takes time step integer, starts reading stream; adjust refresh interval if needed[cite: 7]
+s2.enable(timeStep) # Enable sensor s2; takes time step integer, starts reading stream; adjust refresh interval if needed[cite: 7]
+s3.enable(timeStep) # Enable sensor s3; takes time step integer, starts reading stream; adjust refresh interval if needed[cite: 7]
+s4.enable(timeStep) # Enable sensor s4; takes time step integer, starts reading stream; adjust refresh interval if needed[cite: 7]
+
+camera = robot.getDevice("camera_centre") # Fetch front vision camera handle; accepts device string, returns Camera object; adjust to match PROTO name[cite: 1]
+camera.enable(timeStep) # Enable main camera stream; takes time step integer, outputs image buffer; adjust sampling frequency if needed[cite: 1]
+
+colour_sensor = robot.getDevice("colour_sensor") # Fetch bottom ground color sensor handle; accepts device string, returns Camera object; adjust to match PROTO name[cite: 3]
+colour_sensor.enable(timeStep) # Enable ground color sensor; takes time step integer, outputs color buffer; adjust sampling frequency if needed[cite: 3]
+
+emitter = robot.getDevice("emitter") # Fetch communication emitter handle; accepts device string, returns Emitter object; adjust string if PROTO differs[cite: 2, 4, 5, 6]
+receiver = robot.getDevice("receiver") # Fetch communication receiver handle; accepts device string, returns Receiver object; adjust string if PROTO differs[cite: 5, 6]
+receiver.enable(timeStep) # Enable receiver queue processing; takes time step integer, activates buffer; adjust polling interval if needed[cite: 5, 6]
+
+def detectVisualSimple(image_data, camera_obj): # Function signature for victim processing; accepts raw image byte array and camera object; returns coordinate list[cite: 1]
+    coords_list = [] # Initialize storage list for detected victim pixel coordinates; produces list of [x,y] pairs[cite: 1]
+    if image_data is None: # Check for empty frame; accepts byte array, produces boolean check; prevents crashes on uninitialized camera[cite: 1]
+        return coords_list # Return empty coordinate array if frame invalid; outputs empty list[cite: 1]
+    img = np.array(np.frombuffer(image_data, np.uint8).reshape((camera_obj.getHeight(), camera_obj.getWidth(), 4))) # Reshape raw bytes into height x width x 4 BGRA matrix array[cite: 1]
+    img[:,:,2] = np.zeros([img.shape[0], img.shape[1]]) # Zero out red channel; modifies img matrix in-place to alter color filtering; adjust channel index for color targets[cite: 1]
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) # Convert frame from BGR to grayscale matrix array; takes BGRA frame, outputs 1-channel image array[cite: 1]
+    thresh = cv2.threshold(gray, 140, 255, cv2.THRESH_BINARY)[1] # Binary threshold grayscale image; takes pixel values, outputs thresholded mask; adjust 140 cut-off for ambient light[cite: 1]
+    contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) # Extract vector boundaries; takes binary image mask, outputs contour shape structures[cite: 1]
+    for c in contours: # Loop over found contour structures; processes each item in contour list sequentially[cite: 1]
+        if cv2.contourArea(c) > 1000: # Filter small contours; takes pixel area float, evaluates threshold; adjust 1000 threshold to filter target size[cite: 1]
+            coords = list(c[0][0]) # Extract target coordinate pair; converts array point to [x, y] integer list[cite: 1]
+            coords_list.append(coords) # Add point list to output collection; appends coordinates to return array[cite: 1]
+            print("Victim at x=" + str(coords[0]) + " y=" + str(coords[1])) # Output position text string to console; displays victim detection coordinates[cite: 1]
+    return coords_list # Return collected coordinate pairs; outputs list of coordinate lists[cite: 1]
+
+def viewColour(): # Function signature for checking ground floor tile color; takes no args, prints HSV telemetry[cite: 3]
+    colour = colour_sensor.getImage() # Query raw buffer from downward sensor; returns raw image byte array[cite: 3]
+    if colour is not None: # Validate ground camera image buffer; evaluates buffer presence boolean[cite: 3]
+        img = np.array(np.frombuffer(colour, np.uint8).reshape((colour_sensor.getHeight(), colour_sensor.getWidth(), 4))) # Form height x width x 4 BGRA matrix array from sensor data[cite: 3]
+        img[:,:,2] = np.zeros([img.shape[0], img.shape[1]]) # Mask out red channel matrix layer; modifies color array; adjust channel filters if targeting specific tiles[cite: 3]
+        hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)[0][0] # Map tile image center to HSV values; takes color matrix, outputs 3-element array[cite: 3]
+        print("Tile HSV : ", hsv) # Print HSV vector string to console output; aids tile calibration[cite: 3]
+
+lastRequestTime = robot.getTime() # Track command loop execution time; takes current clock float; initializes timer reference[cite: 5, 6]
+
+while robot.step(timeStep) != -1: # Execute simulation tick loop; takes timestep ms int, returns -1 when simulation terminates[cite: 1, 3, 4, 5, 6, 7]
+    current_time = robot.getTime() # Query simulation time clock; returns current runtime float[cite: 3, 5, 6, 7]
+    
+    if current_time - lastRequestTime > 1.0: # Check if 1 second timer interval has elapsed; evaluates float time difference; adjust 1.0 to change telemetry rate[cite: 5, 6]
+        game_msg = struct.pack('c', 'G'.encode()) # Format game status request byte payload; outputs 1-byte packed struct containing 'G'[cite: 6]
+        emitter.send(game_msg) # Transmit telemetry query over radio link; takes packed byte array payload[cite: 6]
+        lastRequestTime = current_time # Reset interval clock variable; updates float baseline time[cite: 5, 6]
+
+    if receiver.getQueueLength() > 0: # Check if receiver byte packets are available; returns integer buffer length[cite: 5, 6]
+        receivedData = receiver.getBytes() # Extract oldest byte payload from buffer queue; returns packed binary string[cite: 5, 6]
+        if len(receivedData) == 16: # Validate incoming 16-byte message size; evaluates data length integer[cite: 6]
+            tup = struct.unpack('c f i i', receivedData) # Extract packet elements; outputs tuple (command, score, game_time, real_time)[cite: 6]
+            if tup[0].decode("utf-8") == 'G': # Filter for game response command; evaluates decoded string equality[cite: 6]
+                print(f'Game Score: {tup[1]}  Remaining time: {tup[2]}') # Print unpacked score and time values to console[cite: 6]
+        receiver.nextPacket() # Remove processed packet from queue; advances receiver buffer ring[cite: 5, 6]
+
+    img_data = camera.getImage() # Acquire frame bytes from front camera; outputs raw camera image payload[cite: 1]
+    detectVisualSimple(img_data, camera) # Execute visual victim identification pipeline; passes raw byte stream and camera handle[cite: 1]
+    
+    viewColour() # Execute ground tile inspection logic; checks floor sensor color values[cite: 3]
+
+    v1 = s1.getValue() # Read proximity sensor 1 distance value; outputs float sensor distance[cite: 7]
+    v2 = s2.getValue() # Read proximity sensor 2 distance value; outputs float sensor distance[cite: 7]
+    v3 = s3.getValue() # Read proximity sensor 3 distance value; outputs float sensor distance[cite: 7]
+    v4 = s4.getValue() # Read proximity sensor 4 distance value; outputs float sensor distance[cite: 7]
+
+    speed1 = max_velocity # Initialize left motor speed variable; float value set to maximum velocity default[cite: 7]
+    speed2 = max_velocity # Initialize right motor speed variable; float value set to maximum velocity default[cite: 7]
+
+    if v1 < 0.1: # Evaluate left front obstacle distance limit; tests float threshold; adjust 0.1 threshold to alter turning distance[cite: 7]
+        speed2 = max_velocity / 2 # Reduce right wheel speed float value; turns robot towards right side[cite: 7]
+    if v4 < 0.1: # Evaluate right front obstacle distance limit; tests float threshold; adjust 0.1 threshold to alter turning distance[cite: 7]
+        speed1 = max_velocity / 2 # Reduce left wheel speed float value; turns robot towards left side[cite: 7]
+    if v2 < 0.1: # Evaluate close obstacle hazard threshold; tests float distance value[cite: 7]
+        speed1 = max_velocity # Assign full positive speed to left motor[cite: 7]
+        speed2 = -max_velocity # Assign inverted negative speed to right motor; forces sharp turn spin maneuver[cite: 7]
+
+    wheel1.setVelocity(speed1) # Command output speed to left motor object; takes speed float value; updates wheel spin rate[cite: 7]
+    wheel2.setVelocity(speed2) # Command output speed to right motor object; takes speed float value; updates wheel spin rate[cite: 7]
